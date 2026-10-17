@@ -87,7 +87,7 @@ int main(int argc, char* argv[]) {
 
        //----- Initialize your timer, datagram buffer, transport layer etc. -----
        // Create the unreliableTransport object
-       unreliableTransport serverConnection(hostname, portNum);
+       unreliableTransportC serverConnection(hostname, portNum);
 
        // Create the timer object - using 50 ms to start
        timerC timer(50);
@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
 
         // Value that indicates if the datagram has reached its end
         bool finished = false;
-        
+
         while (!finished) {
             
             // ***********************************************************************
