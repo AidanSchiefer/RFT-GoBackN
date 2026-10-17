@@ -169,9 +169,17 @@ int main(int argc, char *argv[])
                 }
             }
 
-            // ***********************************************************************
-            // * Have we has the timer gone off?
-            // ***********************************************************************
+            //----- Have we has the timer gone off? -----
+            // Check if the timer is still running and if it has timed out
+            if (timer.isRunning() && timer.timeout()){
+                // restart the timer
+                timer.start();
+
+                // Resend every packet from base to nextSeqNum - 1
+                datagramS &packet = sndpkt[(((nextSeqNumber - 1) - base) % WINDOW_SIZE)];
+
+                serverConnection.udt_send(packet);
+            }
         }
     }
     catch (std::exception &e)
