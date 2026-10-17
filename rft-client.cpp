@@ -73,11 +73,15 @@ int main(int argc, char* argv[]) {
     TRACE << "\tDebug Level: " << LOG_LEVEL << ENDL;
     TRACE << "\tOutput file name: " << inputFilename << ENDL;
 
+    //----- Open the input file -----
 
-    // **************************************************
-    // Open the input file.
-    // **************************************************
+    // Open the file using ifstream in binary mode
+    std::ifstream inputFile(inputFilename, std::ios::binary);
 
+    // Check if the file opening fails - throw an error if so
+    if (!inputFile){
+        ERROR << "Cannot open " << inputFilename << ENDL;
+    }
 
     try {
 
