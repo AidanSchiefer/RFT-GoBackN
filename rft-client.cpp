@@ -85,10 +85,23 @@ int main(int argc, char* argv[]) {
 
     try {
 
-       // *******************************************************************
-       // * Initialize your timer, datagram buffer, transport layer etc.
-       // *******************************************************************
-       bool finished(false);
+       //----- Initialize your timer, datagram buffer, transport layer etc. -----
+       // Create the unreliableTransport object
+       unreliableTransport serverConnection(hostname, portNum);
+
+       // Create the timer object - using 50 ms to start
+       timerC timer(50);
+
+       // Create the send packet array
+       std::array<datagramS, WINDOW_SIZE> sndpkt;
+
+       // Create the base values and next sequence number values
+       int base = 0;
+       int nextSeqNumber = 0;
+
+        // Value that indicates if the datagram has reached its end
+        bool finished = false;
+        
         while (!finished) {
             
             // ***********************************************************************
