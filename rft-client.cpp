@@ -110,14 +110,43 @@ int main(int argc, char *argv[])
         int nextSeqNumber = 0;
 
         // Value that indicates if the datagram has reached its end
+        bool endOfFileReached = false;
+
         bool finished = false;
 
         while (!finished)
         {
+            //----- Is there space in the window? If so, read data from file and send it -----
+            if (!endOfFileReached && (nextSeqNumber < base + WINDOW_SIZE)){
+                // Set the packet size
+                datagramS &packet = sndpkt[nextSeqNumber % WINDOW_SIZE];
 
-            // ***********************************************************************
-            // * Is there space in the window? If so, read data from file and send it
-            // ***********************************************************************
+                // Clear out the current packet
+                memset(&packet, 0, sizeof(packet));
+
+                // Read in from the file
+                inputFile.read("", MAX_PAYLOAD_LENGTH);
+
+                // Set the packet payload length to the total amout read in from the file
+                packet.payloadLength = inputFile.gcount();
+
+                // Set the sequence number
+                packet.seqNum = nextSeqNumber;
+
+                // Compute the checksum, then store is
+                int checksum = computeChecksum(packet);
+
+                // Send the packet
+                serverConnection.udt_send(packet);
+
+                // If the base = the next sequence number, start the timer
+                if (base == nextSeqNumber){
+                    timer.start();
+                }
+
+                // Increment the next 
+                nextSeqNumber++;
+            }
 
             // ***********************************************************************
             // * Are there acknowledgments in from the server. If so, process them.
