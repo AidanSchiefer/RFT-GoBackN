@@ -14,9 +14,9 @@
 #include "unreliableTransport.h"
 #include "logging.h"
 
-
 #define WINDOW_SIZE 10
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[])
+{
 
     // Defaults
     uint16_t portNum = 12345;
@@ -24,48 +24,56 @@ int main(int argc, char* argv[]) {
     std::string inputFilename = "";
 
     int opt;
-    try {
+    try
+    {
         int signedTemp;
-        while ((opt = getopt(argc, argv, "f:h:p:d:")) != -1) {
-            switch (opt) {
-                case 'p':
-                    signedTemp = std::stoi(optarg);
-                    if ((signedTemp < 12000) or (signedTemp > 13000)) {
-                        std::cerr  << "To deal with isengard's firewall, port numbers must be between 12,000 and 13,000."  << std::endl;
-                         exit(EXIT_FAILURE);
-                    }
-                    portNum = signedTemp;
-                    break;
- 
-                case 'h':
-                    hostname = optarg;
-                    break;
-                case 'd':
-                    LOG_LEVEL = std::stoi(optarg);
-                    if ((LOG_LEVEL < 0) or (LOG_LEVEL > 6)) {
-                        std::cerr  << "Debug level must be between 0 and 6"  << std::endl;
-                        std::cout << "Usage: " << argv[0] << " -f filename [-h hostname] [-p port] [-d debug_level]" << std::endl;
-                        exit(EXIT_FAILURE);
-                    }
-                    break;
-                case 'f':
-                    inputFilename = optarg;
-                    break;
-                case '?':
-                default:
+        while ((opt = getopt(argc, argv, "f:h:p:d:")) != -1)
+        {
+            switch (opt)
+            {
+            case 'p':
+                signedTemp = std::stoi(optarg);
+                if ((signedTemp < 12000) or (signedTemp > 13000))
+                {
+                    std::cerr << "To deal with isengard's firewall, port numbers must be between 12,000 and 13,000." << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+                portNum = signedTemp;
+                break;
+
+            case 'h':
+                hostname = optarg;
+                break;
+            case 'd':
+                LOG_LEVEL = std::stoi(optarg);
+                if ((LOG_LEVEL < 0) or (LOG_LEVEL > 6))
+                {
+                    std::cerr << "Debug level must be between 0 and 6" << std::endl;
                     std::cout << "Usage: " << argv[0] << " -f filename [-h hostname] [-p port] [-d debug_level]" << std::endl;
-                    break;
+                    exit(EXIT_FAILURE);
+                }
+                break;
+            case 'f':
+                inputFilename = optarg;
+                break;
+            case '?':
+            default:
+                std::cout << "Usage: " << argv[0] << " -f filename [-h hostname] [-p port] [-d debug_level]" << std::endl;
+                break;
             }
         }
-    } catch (std::exception &e) {
+    }
+    catch (std::exception &e)
+    {
         FATAL << "Invalid command line arguments: " << e.what() << ENDL;
         std::cout << "Usage: " << argv[0] << " -f filename [-h hostname] [-p port] [-d debug_level]" << std::endl;
         exit(1);
     }
 
-    if (inputFilename == "") {
+    if (inputFilename == "")
+    {
         FATAL << "Invalid command line arguments: -f filename is required" << ENDL;
-         exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
     TRACE << "Command line arguments parsed." << ENDL;
     TRACE << "\tServername: " << hostname << ENDL;
@@ -79,48 +87,50 @@ int main(int argc, char* argv[]) {
     std::ifstream inputFile(inputFilename, std::ios::binary);
 
     // Check if the file opening fails - throw an error if so
-    if (!inputFile){
+    if (!inputFile)
+    {
         ERROR << "Cannot open " << inputFilename << ENDL;
     }
 
-    try {
+    try
+    {
 
-       //----- Initialize your timer, datagram buffer, transport layer etc. -----
-       // Create the unreliableTransport object
-       unreliableTransportC serverConnection(hostname, portNum);
+        //----- Initialize your timer, datagram buffer, transport layer etc. -----
+        // Create the unreliableTransport object
+        unreliableTransportC serverConnection(hostname, portNum);
 
-       // Create the timer object - using 50 ms to start
-       timerC timer(50);
+        // Create the timer object - using 50 ms to start
+        timerC timer(50);
 
-       // Create the send packet array
-       std::array<datagramS, WINDOW_SIZE> sndpkt;
+        // Create the send packet array
+        std::array<datagramS, WINDOW_SIZE> sndpkt;
 
-       // Create the base values and next sequence number values
-       int base = 0;
-       int nextSeqNumber = 0;
+        // Create the base values and next sequence number values
+        int base = 0;
+        int nextSeqNumber = 0;
 
         // Value that indicates if the datagram has reached its end
         bool finished = false;
 
-        while (!finished) {
-            
+        while (!finished)
+        {
+
             // ***********************************************************************
             // * Is there space in the window? If so, read data from file and send it
             // ***********************************************************************
-        
+
             // ***********************************************************************
             // * Are there acknowledgments in from the server. If so, process them.
             // ***********************************************************************
-            
+
             // ***********************************************************************
             // * Have we has the timer gone off?
             // ***********************************************************************
- 
         }
-
-        
-    } catch (std::exception &e) {
-        FATAL<< "Error: " << e.what() << ENDL;
+    }
+    catch (std::exception &e)
+    {
+        FATAL << "Error: " << e.what() << ENDL;
         exit(1);
     }
 
