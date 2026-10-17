@@ -148,9 +148,26 @@ int main(int argc, char *argv[])
                 nextSeqNumber++;
             }
 
-            // ***********************************************************************
-            // * Are there acknowledgments in from the server. If so, process them.
-            // ***********************************************************************
+            //----- Are there acknowledgments in from the server. If so, process them. -----
+            // Create a datagramS ack variable
+            datagramS ack;
+
+            // If the server connection received a value greater than a one, investigate the ack
+            if (serverConnection.udt_receive(ack) > 0){
+                // Validate the checksum, if true, increase the base
+                if (validateChecksum(ack)){
+                    base = ack.ackNum + 1;
+                }
+
+                // If the base equals the next sequence number, stop the timer
+                if (base == nextSeqNumber){
+                    timer.stop();
+                }
+                // Else, restart the timer
+                else{
+                    timer.start();
+                }
+            }
 
             // ***********************************************************************
             // * Have we has the timer gone off?
