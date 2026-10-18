@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <array>
 #include <cstring>
+#include <stdexcept>
 
 #include "timerC.h"
 #include "unreliableTransport.h"
@@ -81,17 +82,16 @@ int main(int argc, char *argv[])
     TRACE << "\tDebug Level: " << LOG_LEVEL << ENDL;
     TRACE << "\tOutput file name: " << inputFilename << ENDL;
 
-    //----- Open the input file -----
-
-    // Open the file using ifstream in binary mode
-    std::ifstream inputFile(inputFilename, std::ios::binary);
-
-    // Check if the file opening fails - throw an error if so
-    if (!inputFile){
-        throw std::runtime_error("Cannot open " + inputFilename);
-    }
-
     try{
+        //----- Open the input file -----
+
+        // Open the file using ifstream in binary mode
+        std::ifstream inputFile(inputFilename, std::ios::binary);
+
+        // Check if the file opening fails - throw an error if so
+        if (!inputFile){
+            throw std::runtime_error("Cannot open " + inputFilename);
+        }
 
         //----- Initialize your timer, datagram buffer, transport layer etc. -----
         // Create the unreliableTransport object
@@ -161,18 +161,12 @@ int main(int argc, char *argv[])
             // If the server connection received a value greater than a one, investigate the ack
             if (serverConnection.udt_receive(ack) > 0){
                 // Validate the checksum and if the ackNum + 1 is larger than the current base, if true, increase the base
-                if (validateChecksum(ack) && ((ack.ackNum + 1) > base)){
+                if (validateChecksum(ack) && (ack.ackNum < nextSeqNumber) && ((ack.ackNum + 1) > base)){
                     // Increase the base
                     base = ack.ackNum + 1;
 
                     // Reset the timeout counter since base has updated
                     consecutiveTimeouts = 0;
-
-                    // Verify there isn't a bogus ACK
-                    if (ack.ackNum < nextSeqNumber){
-                        // Skip the packet
-                        continue;
-                    }
 
                     // If the base equals the next sequence number, stop the timer
                     if (base == nextSeqNumber){
