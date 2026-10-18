@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
 
     // Check if the file opening fails - throw an error if so
     if (!inputFile){
-        ERROR << "Cannot open " << inputFilename << ENDL;
+        throw std::runtime_error("Cannot open " + inputFilename);
     }
 
     try{
@@ -176,6 +176,7 @@ int main(int argc, char *argv[])
             // Check if the timer is still running and if it has timed out
             if (timer.isRunning() && timer.timeout()){
                 // restart the timer
+                timer.stop();
                 timer.start();
 
                 // Resend every packet from base to nextSeqNum - 1
