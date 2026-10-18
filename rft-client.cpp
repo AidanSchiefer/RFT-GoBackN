@@ -87,13 +87,11 @@ int main(int argc, char *argv[])
     std::ifstream inputFile(inputFilename, std::ios::binary);
 
     // Check if the file opening fails - throw an error if so
-    if (!inputFile)
-    {
+    if (!inputFile){
         ERROR << "Cannot open " << inputFilename << ENDL;
     }
 
-    try
-    {
+    try{
 
         //----- Initialize your timer, datagram buffer, transport layer etc. -----
         // Create the unreliableTransport object
@@ -106,16 +104,15 @@ int main(int argc, char *argv[])
         std::array<datagramS, WINDOW_SIZE> sndpkt;
 
         // Create the base values and next sequence number values
-        int base = 0;
-        int nextSeqNumber = 0;
+        uint32_t base = 0;
+        uint32_t nextSeqNumber = 0;
 
         // Value that indicates if the datagram has reached its end
         bool endOfFileReached = false;
 
         bool finished = false;
 
-        while (!finished)
-        {
+        while (!finished){
             //----- Is there space in the window? If so, read data from file and send it -----
             if (!endOfFileReached && (nextSeqNumber < base + WINDOW_SIZE)){
                 // Set the packet size
@@ -125,7 +122,12 @@ int main(int argc, char *argv[])
                 memset(&packet, 0, sizeof(packet));
 
                 // Read in from the file
-                inputFile.read("", MAX_PAYLOAD_LENGTH);
+                inputFile.read(reinterpret_cast<char *>(packet.data), MAX_PAYLOAD_LENGTH);
+
+                // If the gcount is zero, set end of file boolean to true
+                if (inputFile.gcount() == 0){
+                    endOfFileReached = true;
+                }
 
                 // Set the packet payload length to the total amout read in from the file
                 packet.payloadLength = inputFile.gcount();
@@ -134,7 +136,7 @@ int main(int argc, char *argv[])
                 packet.seqNum = nextSeqNumber;
 
                 // Compute the checksum, then store is
-                int checksum = computeChecksum(packet);
+                packet.checksum = computeChecksum(packet);
 
                 // Send the packet
                 serverConnection.udt_send(packet);
@@ -144,7 +146,7 @@ int main(int argc, char *argv[])
                     timer.start();
                 }
 
-                // Increment the next 
+                // Increment the next
                 nextSeqNumber++;
             }
 
@@ -154,18 +156,19 @@ int main(int argc, char *argv[])
 
             // If the server connection received a value greater than a one, investigate the ack
             if (serverConnection.udt_receive(ack) > 0){
-                // Validate the checksum, if true, increase the base
-                if (validateChecksum(ack)){
+                // Validate the checksum and if the ackNum + 1 is larger than the current base, if true, increase the base
+                if (validateChecksum(ack) && ((ack.ackNum + 1) > base)){
                     base = ack.ackNum + 1;
-                }
 
-                // If the base equals the next sequence number, stop the timer
-                if (base == nextSeqNumber){
-                    timer.stop();
-                }
-                // Else, restart the timer
-                else{
-                    timer.start();
+                    // If the base equals the next sequence number, stop the timer
+                    if (base == nextSeqNumber){
+                        timer.stop();
+                    }
+                    // Else, restart the timer
+                    else{
+                        timer.stop();
+                        timer.start();
+                    }
                 }
             }
 
@@ -176,14 +179,20 @@ int main(int argc, char *argv[])
                 timer.start();
 
                 // Resend every packet from base to nextSeqNum - 1
-                datagramS &packet = sndpkt[(((nextSeqNumber - 1) - base) % WINDOW_SIZE)];
+                for (uint32_t seq = base; seq < nextSeqNumber; seq++){
+                    datagramS &packet = sndpkt[seq % WINDOW_SIZE];
 
-                serverConnection.udt_send(packet);
+                    serverConnection.udt_send(packet);
+                }
+            }
+
+            // Check if end of fiule has been reached and if the base equals the next sequence number. Set finished to true if so
+            if (endOfFileReached && (base == nextSeqNumber)){
+                finished = true;
             }
         }
     }
-    catch (std::exception &e)
-    {
+    catch (std::exception &e){
         FATAL << "Error: " << e.what() << ENDL;
         exit(1);
     }
