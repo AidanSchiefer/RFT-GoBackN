@@ -107,6 +107,10 @@ int main(int argc, char *argv[])
         uint32_t base = 0;
         uint32_t nextSeqNumber = 0;
 
+        // Counter variable and maximum timeout variable for EOF loss checks
+        int consecutiveTimeouts = 0;
+        const int MAX_TIMEOUTS_AT_EOF = 15; // Allowed timeouts at end of file. Allows a decent amount of timeouts to occur before ending the server
+
         // Value that indicates if the datagram has reached its end
         bool endOfFileReached = false;
 
@@ -158,7 +162,17 @@ int main(int argc, char *argv[])
             if (serverConnection.udt_receive(ack) > 0){
                 // Validate the checksum and if the ackNum + 1 is larger than the current base, if true, increase the base
                 if (validateChecksum(ack) && ((ack.ackNum + 1) > base)){
+                    // Increase the base
                     base = ack.ackNum + 1;
+
+                    // Reset the timeout counter since base has updated
+                    consecutiveTimeouts = 0;
+
+                    // Verify there isn't a bogus ACK
+                    if (ack.ackNum < nextSeqNumber){
+                        // Skip the packet
+                        continue;
+                    }
 
                     // If the base equals the next sequence number, stop the timer
                     if (base == nextSeqNumber){
@@ -175,15 +189,25 @@ int main(int argc, char *argv[])
             //----- Have we has the timer gone off? -----
             // Check if the timer is still running and if it has timed out
             if (timer.isRunning() && timer.timeout()){
-                // restart the timer
-                timer.stop();
-                timer.start();
+                // Increase the consecutive timeout counter
+                consecutiveTimeouts++;
 
-                // Resend every packet from base to nextSeqNum - 1
-                for (uint32_t seq = base; seq < nextSeqNumber; seq++){
-                    datagramS &packet = sndpkt[seq % WINDOW_SIZE];
+                // Check if the end of the file has been reached and if the consecutive timout limit has been reached
+                if (endOfFileReached && (consecutiveTimeouts >= MAX_TIMEOUTS_AT_EOF)){
+                    finished = true;
+                }
+                else{
 
-                    serverConnection.udt_send(packet);
+                    // restart the timer
+                    timer.stop();
+                    timer.start();
+
+                    // Resend every packet from base to nextSeqNum - 1
+                    for (uint32_t seq = base; seq < nextSeqNumber; seq++){
+                        datagramS &packet = sndpkt[seq % WINDOW_SIZE];
+
+                        serverConnection.udt_send(packet);
+                    }
                 }
             }
 
