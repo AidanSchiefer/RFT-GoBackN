@@ -98,14 +98,14 @@ int main(int argc, char *argv[])
         unreliableTransportC serverConnection(hostname, portNum);
 
         // Create the timer object - using 50 ms to start
-        timerC timer(50);
+        timerC timer(500);
 
         // Create the send packet array
         std::array<datagramS, WINDOW_SIZE> sndpkt;
 
         // Create the base values and next sequence number values
-        uint32_t base = 0;
-        uint32_t nextSeqNumber = 0;
+        uint32_t base = 1;
+        uint32_t nextSeqNumber = 1;
 
         // Counter variable and maximum timeout variable for EOF loss checks
         int consecutiveTimeouts = 0;
@@ -158,8 +158,12 @@ int main(int argc, char *argv[])
             // Create a datagramS ack variable
             datagramS ack;
 
+            // Clear out the ack
+            memset(&ack, 0, sizeof(ack));
+
             // If the server connection received a value greater than a one, investigate the ack
             if (serverConnection.udt_receive(ack) > 0){
+                DEBUG << "ACK received: acknum=" << ack.ackNum << " valid=" << validateChecksum(ack) << " base=" << base << " nextSeq=" << nextSeqNumber << ENDL;
                 // Validate the checksum and if the ackNum + 1 is larger than the current base, if true, increase the base
                 if (validateChecksum(ack) && (ack.ackNum < nextSeqNumber) && ((ack.ackNum + 1) > base)){
                     // Increase the base

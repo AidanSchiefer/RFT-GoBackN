@@ -6,3 +6,6 @@ rft-client
 
 # Ignore the test files
 *.mb
+
+# Ignore the test .bin files
+*.bin
